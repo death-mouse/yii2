@@ -20,7 +20,16 @@ class EventController extends Controller
     }
     public function actionView()
     {
-        return 'Event@view';
+        $format = 'Y-m-d H:i:s';
+        $dateStart = mktime(0, 0, 0, date("m")  , date("d"), date("Y"));
+        $dateEnd =  mktime(0, 0, 0, date("m")  , date("d")+1, date("Y"));
+        
+        $arr = [
+            ['title' => "Первое событие", 'description' => "Описание первого события", 'dayStart' => $dateStart,'dayEnd' =>$dateEnd],
+            ['title' => "Второе событие", 'description' => "Описание второго события", 'dayStart' => $dateStart,'dayEnd' =>$dateEnd],
+        ];
+        return $this->render('view', ['events' => $arr]);
+        //return 'Event@view';
     }
     public function actionEdit()
     {
