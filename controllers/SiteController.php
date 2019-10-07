@@ -2,12 +2,13 @@
 
 namespace app\controllers;
 
-use app\models\LoginForm;
-use app\models\RegisterForm;
+use app\models\forms\LoginForm;
+use app\models\forms\SignupForm;
 use Yii;
+use yii\captcha\CaptchaAction;
 use yii\filters\AccessControl;
-use yii\filters\VerbFilter;
 use yii\web\Controller;
+use yii\web\ErrorAction;
 use yii\web\Response;
 
 class SiteController extends Controller
@@ -29,24 +30,17 @@ class SiteController extends Controller
                     ],
                 ],
             ],
-            'verbs' => [
-                'class' => VerbFilter::class,
-                'actions' => [
-                    'logout' => ['post'],
-                ],
-            ],
         ];
     }
 
     /**
      * {@inheritdoc}
      */
-
     public function actions()
     {
         return [
-            'error' => ['class' => yii\web\ErrorAction::class],
-            'captcha' => ['class' => yii\captcha\CaptchaAction::class, 'fixedVerifyCode' => YII_ENV_TEST ? 'testme' : null],
+            'error' => ['class' => ErrorAction::class],
+            'captcha' => ['class' => CaptchaAction::class, 'fixedVerifyCode' => YII_ENV_TEST ? 'testme' : null],
         ];
     }
 
@@ -80,6 +74,29 @@ class SiteController extends Controller
         $model->password = '';
 
         return $this->render('login', [
+            'model' => $model,
+        ]);
+    }
+
+    /**
+     * Страница с формой регистрации
+     *
+     * @return Response|string
+     * @throws \yii\base\Exception
+     */
+    public function actionSignup()
+    {
+        if (!Yii::$app->user->isGuest) {
+            return $this->goHome();
+        }
+
+        $model = new SignupForm();
+
+        if ($model->load(Yii::$app->request->post()) && $model->register()) {
+            return $this->goHome();
+        }
+
+        return $this->render('signup', [
             'model' => $model,
         ]);
     }

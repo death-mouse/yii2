@@ -7,21 +7,38 @@
 
 namespace app\models;
 
+use yii\behaviors\BlameableBehavior;
 use yii\db\ActiveRecord;
-use yii\i18n\Formatter;
-
 
 /**
- * Модель - Событие
+ * Класс - Событие
+ *
  * @package app\models
+ *
+ * @property int $id [int(11)]  Порядковый номер
+ * @property string $title [varchar(255)]  Название события
+ * @property string $date_start [varchar(255)]  Дата начала
+ * @property string $date_end [varchar(255)]  Дата окончания
+ * @property int $user_id [int(11)]  Создатель события
+ * @property string $description Описание события
+ * @property bool $repeat [tinyint(1)]  Может ли повторяться
+ * @property bool $blocked [tinyint(1)]  Блокирует ли даты
  *
  * @property-read User $user
  */
 class Activity extends ActiveRecord
 {
-    public static function tableName()
+    public function behaviors()
     {
-        return 'activities';
+        return [
+            //BlameableBehavior::class,
+
+            [
+                'class' => BlameableBehavior::class,
+                'createdByAttribute' => 'user_id', // created_by
+                'updatedByAttribute' => 'user_id', // updated_by
+            ],
+        ];
     }
 
     /**
@@ -31,38 +48,25 @@ class Activity extends ActiveRecord
     public function rules()
     {
         return [
-            [['title', 'user_id', 'description'], 'required'],
+            [['title', 'date_start', 'description'], 'required'],
 
             [['title', 'description'], 'string'],
             [['title'], 'string', 'min' => 2, 'max' => 160],
 
             [['date_start', 'date_end'], 'date', 'format' => 'php:Y-m-d'],
-            [['date_start'], 'default', 'value' => 'null'],
+
+            ['date_end', 'default', 'value' => function () {
+                return $this->date_start;
+            }],
+
+            // TODO: валидация даты (не раньше чем date_start)
+            //['date_end', 'validateDate'],
 
             [['user_id'], 'integer'],
 
             [['repeat', 'blocked'], 'boolean'],
-
-            [['date_start'], 'validateStartDate'],
-            [['date_end'], 'validateEndDate', 'message'=>'Дата окончания больше даты начала'],
-
-            //[['attachments'], 'file', 'maxFiles' => 5],
         ];
     }
-
-     public function validateStartDate(){
-            if($this->date_start = 'null') {
-                return $this->date_start = date('Y-m-d');
-            } {
-        }
-    }
-    public function validateEndDate(){
-        if($this->date_start > $this->date_end) {
-            return $this->addError('Дата окончания больше даты начала');
-        } {
-        }
-    }
-
 
     /**
      * Названия полей модели
@@ -71,6 +75,7 @@ class Activity extends ActiveRecord
     public function attributeLabels()
     {
         return [
+            'id' => '#',
             'title' => 'Название',
             'date_start' => 'Дата начала',
             'date_end' => 'Дата окончания',
@@ -78,11 +83,14 @@ class Activity extends ActiveRecord
             'description' => 'Описание события',
             'repeat' => 'Повтор',
             'blocked' => 'Блокирующее',
-            'attachments' => 'Прикрепленные файлы',
         ];
     }
 
-    public function getUser() // $model->user
+    /**
+     * Магический метод для получение зависимого объекта из БД
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUser()
     {
         return $this->hasOne(User::class, ['id' => 'user_id']);
     }

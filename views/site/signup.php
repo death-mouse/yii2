@@ -1,22 +1,31 @@
 <?php
+/**
+ * Created by Artyom Manchenkov
+ * artyom@manchenkoff.me
+ * manchenkoff.me © 2019
+ */
 
-/* @var $this yii\web\View */
-/* @var $form yii\bootstrap\ActiveForm */
-/* @var $model app\models\RegisterForm */
+/**
+ * @var $this yii\web\View
+ * @var $form yii\bootstrap\ActiveForm
+ * @var $model app\models\forms\LoginForm
+ */
 
-use yii\helpers\Html;
 use yii\bootstrap\ActiveForm;
+use yii\helpers\Html;
 
-$this->title = 'Register Form';
+$this->title = 'Регистрация';
 $this->params['breadcrumbs'][] = $this->title;
+
 ?>
 <div class="site-login">
-    <h1><?= Html::encode($this->title) ?></h1>
+    <div class="text-center" style="padding: 20px 0 70px 0;">
+        <h1><?= Html::encode($this->title) ?></h1>
 
-    <p>Please fill out the following fields to register:</p>
+        <p>Заполните форму для регистрации</p>
+    </div>
 
     <?php $form = ActiveForm::begin([
-        'action' => 'register-users',
         'id' => 'login-form',
         'layout' => 'horizontal',
         'fieldConfig' => [
@@ -29,13 +38,11 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <?= $form->field($model, 'password')->passwordInput() ?>
 
-
     <div class="form-group">
         <div class="col-lg-offset-1 col-lg-11">
-            <?= Html::submitButton('Register', ['class' => 'btn btn-success']) ?>
+            <?= Html::submitButton('Продолжить', ['class' => 'btn btn-primary', 'name' => 'login-button']) ?>
         </div>
     </div>
 
     <?php ActiveForm::end(); ?>
-
 </div>
