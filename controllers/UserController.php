@@ -4,19 +4,28 @@
 namespace app\controllers;
 
 
-use app\models\RegisterForm;
+use app\models\Activity;
+use app\models\User;
+use yii\data\ActiveDataProvider;
 use yii\web\Controller;
 
 class UserController extends Controller
 {
-    public function actionRegisterForm()
+    public function actionIndex()
     {
-        $model = new RegisterForm();
-        return $this->render('register-form', compact('model'));
-    }
+        // TODO: получение всех событий через pagination (GridView)
 
-    public function actionRegisterUsers()
-    {
-        return var_dump(\Yii::$app->request->post());
+        $query = User::find();
+
+        $provider = new ActiveDataProvider([
+            'query' => $query,
+            'pagination' => [
+                'validatePage' => false,
+            ],
+        ]);
+
+        return $this->render('index', [
+            'provider' => $provider,
+        ]);
     }
 }
