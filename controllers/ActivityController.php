@@ -7,42 +7,42 @@ use Yii;
 use yii\data\ActiveDataProvider;
 use yii\filters\AccessControl;
 use yii\web\Controller;
+use yii\web\NotFoundHttpException;
 
 class ActivityController extends Controller
 {
     /**
      * Настройка поведений контроллера (ACF доступы)
      * @return array
-     *    public function behaviors()
-    {
-    return [
-    'access' => [
-    'class' => AccessControl::class,
-    'rules' => [
-    [
-    'allow' => true,
-    'actions' => ['index', 'view', 'update', 'delete', 'submit'],
-    'roles' => ['admin'],
-    ],
-    ],
-    ],
-    ];
-    }
      */
-
-    public function actionGrid()
+    public function behaviors()
     {
-        return $this->render('grid');
+        return [
+            'access' => [
+                'class' => AccessControl::class,
+                'rules' => [
+                    [
+                        'allow' => true,
+                        'actions' => ['index', 'view', 'update', 'delete', 'submit'],
+                        'roles' => ['@'],
+                    ],
+                ],
+            ],
+        ];
     }
+
     /**
      * Просмотр всех событий
      * @return string
      */
     public function actionIndex()
     {
-        // TODO: получение всех событий через pagination (GridView)
-
         $query = Activity::find();
+
+        // добавим условие на выборку по пользователю, если это не менеджер
+        if (!Yii::$app->user->can('manager')) {
+            $query->andWhere(['user_id' => Yii::$app->user->id]);
+        }
 
         $provider = new ActiveDataProvider([
             'query' => $query,
@@ -62,16 +62,31 @@ class ActivityController extends Controller
      * @param int $id
      *
      * @return string
+     * @throws NotFoundHttpException
      */
     public function actionView(int $id)
     {
-        // TODO: просмотр события по GET $id (DetailView)
+        // ключ для записи в кеш
+        $cacheKey = "activity_{$id}"; // activity_1
 
-        $item = Activity::findOne($id);
+        // проверка на наличие в кеше
+        if (Yii::$app->cache->exists($cacheKey)) {
+            $item = Yii::$app->cache->get($cacheKey);
+        } else {
+            // получение из бд с сохранением в кеш
+            $item = Activity::findOne($id);
 
-        return $this->render('view', [
-            'model' => $item,
-        ]);
+            Yii::$app->cache->set($cacheKey, $item);
+        }
+
+        // просматривать записи может только создатель или менеджер
+        if (Yii::$app->user->can('manager') || $item->user_id == Yii::$app->user->id) {
+            return $this->render('view', [
+                'model' => $item,
+            ]);
+        } else {
+            throw new NotFoundHttpException();
+        }
     }
 
     /**
@@ -80,16 +95,28 @@ class ActivityController extends Controller
      * @param int|null $id
      *
      * @return string
+     * @throws NotFoundHttpException
      */
     public function actionUpdate(int $id = null)
     {
-        // TODO: показ ошибки 404, если нет такой статьи или нет прав на редактирование
-
-        $item = $id ? Activity::findOne($id) : new Activity();
-
-        return $this->render('edit', [
-            'model' => $item,
+        $item = $id ? Activity::findOne($id) : new Activity([
+            'user_id' => Yii::$app->user->id,
         ]);
+
+        // обновлять записи может только создатель или менеджер
+        if (Yii::$app->user->can('manager') || $item->user_id == Yii::$app->user->id) {
+            if ($item->load(Yii::$app->request->post()) && $item->validate()) {
+                if ($item->save()) {
+                    return $this->redirect(['activity/view', 'id' => $item->id]);
+                }
+            }
+
+            return $this->render('edit', [
+                'model' => $item,
+            ]);
+        } else {
+            throw new NotFoundHttpException();
+        }
     }
 
     /**
@@ -98,28 +125,19 @@ class ActivityController extends Controller
      * @param int $id
      *
      * @return string
+     * @throws NotFoundHttpException
      */
     public function actionDelete(int $id)
     {
-        // TODO: удаление записи по $id + flash Alert, или показ ошибки, если нет прав на редактирование
+        $item = Activity::findOne($id);
 
-        Activity::deleteAll(['id' => $id]);
+        // удалять записи может только создатель или менеджер
+        if ($item->user_id == Yii::$app->user->id || Yii::$app->user->can('manager')) {
+            $item->delete();
 
-        return $this->redirect(['activity/index']);
-    }
-
-    public function actionSubmit()
-    {
-        // TODO: сохранение или обновление записей из POST + flash Alert + redirect (проверка доступа)
-
-        $form = new Activity();
-
-        if ($form->load(Yii::$app->request->post()) && $form->validate()) {
-            if ($form->save()) {
-                return $this->redirect(['activity/view', 'id' => $form->id]);
-            }
+            return $this->redirect(['activity/index']);
         }
 
-        return $this->goBack();
+        throw new NotFoundHttpException();
     }
 }
