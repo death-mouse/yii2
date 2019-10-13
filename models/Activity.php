@@ -7,7 +7,10 @@
 
 namespace app\models;
 
+use app\components\CachedRecordBehavior;
 use yii\behaviors\BlameableBehavior;
+use yii\behaviors\TimestampBehavior;
+use yii\db\ActiveQuery;
 use yii\db\ActiveRecord;
 
 /**
@@ -25,6 +28,9 @@ use yii\db\ActiveRecord;
  * @property bool $blocked [tinyint(1)]  Блокирует ли даты
  *
  * @property-read User $user
+ *
+ * @property int $created_at [int(11)]
+ * @property int $updated_at [int(11)]
  */
 class Activity extends ActiveRecord
 {
@@ -38,6 +44,16 @@ class Activity extends ActiveRecord
                 'createdByAttribute' => 'user_id', // created_by
                 'updatedByAttribute' => 'user_id', // updated_by
             ],
+
+            TimestampBehavior::class,
+
+            // поведение для удаления/сохранения в кеш
+            [
+                'class' => CachedRecordBehavior::class,
+                'prefix' => 'activity',
+            ],
+
+
         ];
     }
 
@@ -59,8 +75,7 @@ class Activity extends ActiveRecord
                 return $this->date_start;
             }],
 
-            // TODO: валидация даты (не раньше чем date_start)
-            //['date_end', 'validateDate'],
+            ['date_end', 'validateDate'],
 
             [['user_id'], 'integer'],
 
@@ -83,15 +98,34 @@ class Activity extends ActiveRecord
             'description' => 'Описание события',
             'repeat' => 'Повтор',
             'blocked' => 'Блокирующее',
+            'created_at' => 'Дата создания',
+            'updated_at' => 'Дата последнего изменения',
         ];
     }
 
     /**
      * Магический метод для получение зависимого объекта из БД
-     * @return \yii\db\ActiveQuery
+     * @return ActiveQuery
      */
     public function getUser()
     {
         return $this->hasOne(User::class, ['id' => 'user_id']);
+    }
+
+    /**
+     * Проверка даты окончания события (не раньше даты начала)
+     *
+     * @param $attr
+     */
+    public function validateDate($attr) // date_end
+    {
+        $start = strtotime($this->date_start);
+        $end = strtotime($this->{$attr});
+
+        if ($start && $end) {
+            if ($end < $start) {
+                $this->addError($attr, 'Некорректный формат даты');
+            }
+        }
     }
 }

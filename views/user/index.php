@@ -1,12 +1,13 @@
 <?php
 
-use yii\helpers\Html;
 use yii\grid\GridView;
+use yii\helpers\Html;
 
 /* @var $this yii\web\View */
 /* @var $dataProvider yii\data\ActiveDataProvider */
 
-$this->title = 'Users';
+$this->title = 'Пользователи';
+
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="user-index">
@@ -14,24 +15,29 @@ $this->params['breadcrumbs'][] = $this->title;
     <h1><?= Html::encode($this->title) ?></h1>
 
     <p>
-        <?= Html::a('Create User', ['create'], ['class' => 'btn btn-success']) ?>
+        <?= Html::a('Создать нового', ['create'], ['class' => 'btn btn-success']) ?>
     </p>
 
 
     <?= GridView::widget([
-        'dataProvider' => $provider,
+        'dataProvider' => $dataProvider,
         'columns' => [
-            ['class' => 'yii\grid\SerialColumn'],
-
             'id',
             'username',
-            'password_hash',
-            'auth_key',
             'access_token',
-            //'created_at',
-            //'updated_at',
+            'created_at:date',
+            'updated_at:date',
 
-            ['class' => 'yii\grid\ActionColumn'],
+            [
+                'class' => yii\grid\ActionColumn::class,
+                'template' => '{view} {delete} {update}',
+                'buttons' => [
+                    'update' => function ($url, $model, $key) {
+                        return Html::a('<span class="glyphicon glyphicon-copy"></span>',
+                            ['send', 'id'=>$model->id],['title'=>'Send']);
+                    },
+                ],
+            ],
         ],
     ]); ?>
 

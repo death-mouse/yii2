@@ -51,9 +51,11 @@ AppAsset::register($this);
         'options' => ['class' => 'navbar-nav navbar-right'],
         'items' => [
             ['label' => 'Главная', 'url' => ['/site/index']],
+            ['label' => 'Календарь', 'url' => ['/site/calendar']],
             ['label' => 'События', 'url' => ['/activity/index']],
-            ['label' => 'Список пользователей', 'url' => ['/user/index']],
-
+            Yii::$app->user->can('admin')
+                ? ['label' => 'Пользователи', 'url' => ['/user/index']]
+                : ['label' => 'Мой кабинет', 'url' => ['/user/userview']],
             Yii::$app->user->isGuest
                 ? ['label' => 'Вход', 'url' => ['/site/login']]
                 : ['label' => 'Выйти', 'url' => ['/site/logout']],
